@@ -4,7 +4,7 @@ import datetime
 import sys
 from urllib import request
 
-from bs4 import BeautifulSoup
+import bs4
 
 
 CALTECH_URL = 'https://hr.caltech.edu/perks/time_away/holiday_observances'
@@ -60,7 +60,14 @@ def parse_date(text, year):
 
 
 def main():
-    soup = BeautifulSoup(request.urlopen(CALTECH_URL))
+    with request.urlopen(CALTECH_URL) as input_file:
+        soup = bs4.BeautifulSoup(input_file)
+    body = soup.html.body
+
+    now = datetime.datetime.utcnow()
+    if 'for {}'.format(now.year) not in body.text.lower():
+        raise SystemExit(
+            '{} is not yet updated for {}'.format(CALTECH_URL, now.year))
 
     print("""\
 BEGIN:VCALENDAR
@@ -68,15 +75,16 @@ VERSION:2.0
 PRODID:caltech.py\
 """)
 
-    now = datetime.datetime.now()
-
-    for row in soup.html.body.find('table').find_all('tr'):
+    for row in body.find('table').find_all('tr'):
         columns = [value.text for value in row.find_all('td')]
+
         start = parse_date(columns[2], year=now.year)
         if not start:
             continue
+
         end = start + datetime.timedelta(days=1)
         name = columns[3]
+
         print("""\
 BEGIN:VEVENT
 DTSTAMP:{now}
