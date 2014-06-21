@@ -24,6 +24,14 @@ MONTHS = {
     'December': 12
 }
 
+HEADER = """\
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:caltech.py\
+"""
+
+FOOTER = 'END:VCALENDAR'
+
 
 def icalendar_date(date_time, full=False):
     text = '{:04}{:02}{:02}'.format(
@@ -65,27 +73,27 @@ def main():
     body = soup.html.body
 
     now = datetime.datetime.utcnow()
-    if 'for {}'.format(now.year) not in body.text.lower():
-        raise SystemExit(
-            '{} is not yet updated for {}'.format(CALTECH_URL, now.year))
 
-    print("""\
-BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:caltech.py\
-""")
+    all_years = [year for year in range(now.year - 1, now.year + 3)
+                 if 'for {}'.format(year) in body.text.lower()]
 
-    for row in body.find('table').find_all('tr'):
-        columns = [value.text for value in row.find_all('td')]
+    all_tables = body.find_all('table')
+    assert len(all_tables) == len(all_years)
 
-        start = parse_date(columns[2], year=now.year)
-        if not start:
-            continue
+    print(HEADER)
 
-        end = start + datetime.timedelta(days=1)
-        name = columns[3]
+    for (year, table) in zip(all_years, all_tables):
+        for row in table.find_all('tr'):
+            columns = [value.text for value in row.find_all('td')]
 
-        print("""\
+            start = parse_date(columns[2], year=year)
+            if not start:
+                continue
+
+            end = start + datetime.timedelta(days=1)
+            name = columns[3]
+
+            print("""\
 BEGIN:VEVENT
 DTSTAMP:{now}
 DTSTART:{start}
@@ -97,9 +105,7 @@ END:VEVENT\
            end=icalendar_date(end),
            name=name))
 
-    print("""\
-END:VCALENDAR\
-""")
+    print(FOOTER)
 
 
 if __name__ == '__main__':
