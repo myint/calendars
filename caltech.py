@@ -69,12 +69,16 @@ def parse_date(text, year):
 
 def main():
     with request.urlopen(CALTECH_URL) as input_file:
+        last_modified = datetime.datetime.strptime(
+            input_file.info()['Last-Modified'],
+            '%a, %d %b %Y %H:%M:%S %Z')
+
         soup = bs4.BeautifulSoup(input_file)
+
     body = soup.html.body
 
-    now = datetime.datetime.utcnow()
-
-    all_years = [year for year in range(now.year - 1, now.year + 3)
+    all_years = [year for year in range(last_modified.year - 1,
+                                        last_modified.year + 3)
                  if 'for {}'.format(year) in body.text.lower()]
 
     all_tables = body.find_all('table')
@@ -95,12 +99,12 @@ def main():
 
             print("""\
 BEGIN:VEVENT
-DTSTAMP:{now}
+DTSTAMP:{last_modified}
 DTSTART:{start}
 DTEND:{end}
 SUMMARY:{name}
 END:VEVENT\
-""".format(now=icalendar_date(now, full=True),
+""".format(last_modified=icalendar_date(last_modified, full=True),
            start=icalendar_date(start),
            end=icalendar_date(end),
            name=name))
