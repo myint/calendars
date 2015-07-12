@@ -73,7 +73,7 @@ def main():
             input_file.info()['Last-Modified'],
             '%a, %d %b %Y %H:%M:%S %Z')
 
-        soup = bs4.BeautifulSoup(input_file)
+        soup = bs4.BeautifulSoup(input_file, 'html.parser')
 
     body = soup.html.body
 
