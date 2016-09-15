@@ -2,7 +2,7 @@
 
 import datetime
 import sys
-from urllib import request
+import urllib.request
 
 import bs4
 
@@ -68,7 +68,7 @@ def parse_date(text, year):
 
 
 def main():
-    with request.urlopen(CALTECH_URL) as input_file:
+    with urllib.request.urlopen(CALTECH_URL) as input_file:
         last_modified = datetime.datetime.strptime(
             input_file.info()['Last-Modified'],
             '%a, %d %b %Y %H:%M:%S %Z')
