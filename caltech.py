@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
 import datetime
+import html.parser
 import sys
 import urllib.request
-
-import bs4
 
 
 CALTECH_URL = 'https://hr.caltech.edu/perks/time_away/holiday_observances'
@@ -67,29 +66,62 @@ def parse_date(text, year):
     return datetime.datetime(year, month, int(values[1]))
 
 
+class CalendarParser(html.parser.HTMLParser):
+
+    tables = []
+
+    _in_table = False
+    _in_tr = False
+    _in_td = False
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'table' and not self._in_table:
+            self.tables.append([])
+            self._in_table = True
+
+        if tag == 'tr' and self._in_table:
+            self.tables[-1].append([])
+            self._in_tr = True
+
+        if tag == 'td' and self._in_tr:
+            self._in_td = True
+
+    def handle_endtag(self, tag):
+        if tag == 'table':
+            self._in_table = False
+
+        if tag == 'tr':
+            self._in_tr = False
+
+        if tag == 'td':
+            self._in_td = False
+
+    def handle_data(self, data):
+        if self._in_td:
+            self.tables[-1][-1].append(data)
+
+
 def main():
     with urllib.request.urlopen(CALTECH_URL) as input_file:
         last_modified = datetime.datetime.strptime(
             input_file.info()['Last-Modified'],
             '%a, %d %b %Y %H:%M:%S %Z')
+        text = input_file.read().decode(
+            input_file.headers.get_content_charset())
 
-        soup = bs4.BeautifulSoup(input_file, 'html.parser')
-
-    body = soup.html.body
+        calendar_parser = CalendarParser()
+        calendar_parser.feed(text)
 
     all_years = [year for year in range(last_modified.year - 1,
                                         last_modified.year + 3)
-                 if 'for {}'.format(year) in body.text.lower()]
+                 if 'for {}'.format(year) in text.lower()]
 
-    all_tables = body.find_all('table')
-    assert len(all_tables) == len(all_years)
+    assert len(calendar_parser.tables) == len(all_years)
 
     print(HEADER)
 
-    for (year, table) in zip(all_years, all_tables):
-        for row in table.find_all('tr'):
-            columns = [value.text for value in row.find_all('td')]
-
+    for (year, table) in zip(all_years, calendar_parser.tables):
+        for columns in table:
             start = parse_date(columns[2], year=year)
             if not start:
                 continue
