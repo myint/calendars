@@ -101,6 +101,12 @@ class CalendarParser(html.parser.HTMLParser):
             self.tables[-1][-1].append(data)
 
 
+def yield_normalized_colummns(columns):
+    for col in columns:
+        if col.strip():
+            yield col
+
+
 def main():
     with urllib.request.urlopen(CALTECH_URL) as input_file:
         last_modified = datetime.datetime.strptime(
@@ -112,8 +118,8 @@ def main():
         calendar_parser = CalendarParser()
         calendar_parser.feed(text)
 
-    all_years = [year for year in range(last_modified.year - 1,
-                                        last_modified.year + 3)
+    all_years = [year for year in range(last_modified.year - 10,
+                                        last_modified.year + 10)
                  if 'for {}'.format(year) in text.lower()]
 
     assert len(calendar_parser.tables) == len(all_years)
@@ -122,6 +128,7 @@ def main():
 
     for (year, table) in zip(all_years, calendar_parser.tables):
         for columns in table:
+            columns = list(yield_normalized_colummns(columns))
             start = parse_date(columns[2], year=year)
             if not start:
                 continue
