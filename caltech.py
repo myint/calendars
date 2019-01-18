@@ -129,7 +129,11 @@ def main():
     for (year, table) in zip(all_years, calendar_parser.tables):
         for columns in table:
             columns = list(yield_normalized_colummns(columns))
-            start = parse_date(columns[2], year=year)
+            try:
+                date_text = columns[2]
+            except IndexError:
+                continue
+            start = parse_date(date_text, year=year)
             if not start:
                 continue
 
