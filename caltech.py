@@ -109,17 +109,19 @@ def yield_normalized_colummns(columns):
 
 def main():
     with urllib.request.urlopen(CALTECH_URL) as input_file:
-        last_modified = datetime.datetime.strptime(
-            input_file.info()['Last-Modified'],
+        # I'd prefer "Last-Modified" time, but this is no longer available.
+        server_date = datetime.datetime.strptime(
+            input_file.info()['Date'],
             '%a, %d %b %Y %H:%M:%S %Z')
+
         text = input_file.read().decode(
             input_file.headers.get_content_charset())
 
         calendar_parser = CalendarParser()
         calendar_parser.feed(text)
 
-    all_years = [year for year in range(last_modified.year - 10,
-                                        last_modified.year + 10)
+    all_years = [year for year in range(server_date.year - 10,
+                                        server_date.year + 10)
                  if 'for {}'.format(year) in text.lower()]
 
     assert len(calendar_parser.tables) == len(all_years)
@@ -142,12 +144,12 @@ def main():
 
             print("""\
 BEGIN:VEVENT
-DTSTAMP:{last_modified}
+DTSTAMP:{server_date}
 DTSTART:{start}
 DTEND:{end}
 SUMMARY:{name}
 END:VEVENT\
-""".format(last_modified=icalendar_date(last_modified, full=True),
+""".format(server_date=icalendar_date(server_date, full=True),
            start=icalendar_date(start),
            end=icalendar_date(end),
            name=name))
