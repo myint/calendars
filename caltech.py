@@ -6,7 +6,7 @@ import sys
 import urllib.request
 
 
-CALTECH_URL = 'https://hr.caltech.edu/perks/time_away/holiday_observances'
+CALTECH_URL = 'https://hr.caltech.edu/resources/holiday-observances'
 
 MONTHS = {
     'January': 1,
@@ -108,7 +108,9 @@ def yield_normalized_colummns(columns):
 
 
 def main():
-    with urllib.request.urlopen(CALTECH_URL) as input_file:
+    request = urllib.request.Request(url=CALTECH_URL,
+                                     headers={'User-Agent': 'Mozilla/5.0'})
+    with urllib.request.urlopen(request) as input_file:
         # I'd prefer "Last-Modified" time, but this is no longer available.
         server_date = datetime.datetime.strptime(
             input_file.info()['Date'],
